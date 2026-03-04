@@ -24,9 +24,9 @@ RUN useradd -G www-data,root -u $uid -d /home/$user $user
 RUN mkdir -p /home/$user/.composer && \
     chown -R $user:$user /home/$user
 
-RUN pecl install -o -f redis \
-    &&  rm -rf /tmp/pear \
-    &&  docker-php-ext-enable redis
+RUN pecl install -o -f redis pcov \
+    && rm -rf /tmp/pear \
+    && docker-php-ext-enable redis pcov
 
 WORKDIR /var/www
 
