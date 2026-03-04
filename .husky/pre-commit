@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+echo "🐳 [Docker] Verificando estilo de código (Pint)..."
+docker compose exec -T app ./vendor/bin/pint
+
+echo "🚀 [Docker] Rodando testes (Pest)..."
+docker compose exec -T app ./vendor/bin/pest
