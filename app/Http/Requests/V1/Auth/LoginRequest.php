@@ -3,7 +3,31 @@
 namespace App\Http\Requests\V1\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    schema: 'LoginRequest',
+    title: 'Login Request',
+    description: 'Esquema de dados para autenticação de usuário',
+    required: ['email', 'password'],
+    properties: [
+        new OA\Property(
+            property: 'email',
+            type: 'string',
+            format: 'email',
+            example: 'usuario@exemplo.com',
+            maxLength: 255
+        ),
+        new OA\Property(
+            property: 'password',
+            type: 'string',
+            format: 'password',
+            example: 'password123',
+            maxLength: 255,
+            minLength: 8
+        ),
+    ]
+)]
 class LoginRequest extends FormRequest
 {
     public function authorize(): bool

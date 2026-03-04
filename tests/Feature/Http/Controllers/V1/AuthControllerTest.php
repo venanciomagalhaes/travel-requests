@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 describe('Register', function () {
 
-    test('deve retornar conflito 409 se o usuário for criado simultaneamente ou já existir na base', function () {
+    test('deve retornar 422 se o usuário for criado simultaneamente ou já existir na base', function () {
         User::factory()->create(['email' => 'duplicate@example.com']);
 
         $response = $this->postJson(route('api.v1.auth.register'), [
