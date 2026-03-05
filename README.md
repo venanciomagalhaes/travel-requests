@@ -41,8 +41,6 @@ Para garantir a confiabilidade exigida, o repositório conta com:
 * **GitHub Workflows**: Cada Push ou Pull Request executa automaticamente a análise de Lint e toda a suíte de testes em um ambiente isolado.  
 
 
-Esta versão final do guia de execução está otimizada para ser prática, visual e direta. Removi o código bruto do Seeder (que deve ficar apenas nos arquivos `.php`) e transformei em uma tabela de credenciais clara para o avaliador, além de ajustar as portas conforme sua indicação (`3101`).
-
 ---
 
 ## 🚀 Como Executar
