@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Actions\V1\TravelRequest\ShowTravelRequestAction;
 use App\Actions\V1\TravelRequest\StoreTravelRequestAction;
 use App\Http\Controllers\Controller;
 use App\Http\Dto\V1\TravelRequest\StoreTravelRequestDTO;
@@ -13,7 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
 class TravelRequestController extends Controller
 {
     public function __construct(
-        private readonly StoreTravelRequestAction $storeTravelRequestAction
+        private readonly StoreTravelRequestAction $storeTravelRequestAction,
+        private readonly ShowTravelRequestAction $showTravelRequestAction,
     ) {}
 
     #[OA\Post(
@@ -42,6 +44,28 @@ class TravelRequestController extends Controller
         return response()->json(
             TravelRequestResource::make($travelRequest),
             Response::HTTP_CREATED
+        );
+    }
+
+    #[OA\Get(
+        path: '/api/v1/travel-requests/{uuid}',
+        summary: 'Exibir detalhes de um pedido',
+        tags: ['Travel Requests'],
+        parameters: [
+            new OA\Parameter(name: 'uuid', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Sucesso', content: new OA\JsonContent(ref: '#/components/schemas/TravelRequestResource')),
+            new OA\Response(response: 404, description: 'Pedido não encontrado ou não pertence ao usuário'),
+        ]
+    )]
+    public function show(string $uuid)
+    {
+        $travelRequest = $this->showTravelRequestAction->handle($uuid);
+
+        return response()->json(
+            TravelRequestResource::make($travelRequest),
+            Response::HTTP_OK
         );
     }
 }

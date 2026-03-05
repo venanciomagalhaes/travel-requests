@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\V1;
 
+use App\Models\TravelRequest;
 use App\Models\User;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -74,6 +75,67 @@ describe('Store Protection', function () {
 
     test('não deve permitir acesso à criação de pedidos sem token', function () {
         $this->postJson(route('api.v1.travel-requests.store'), [])
+            ->assertStatus(Response::HTTP_UNAUTHORIZED);
+    });
+});
+
+describe('Show Travel Request', function () {
+
+    beforeEach(function () {
+        $this->usuario = User::factory()->create();
+    });
+
+    test('deve exibir os detalhes do pedido se ele pertencer ao usuário autenticado', function () {
+        $pedido = TravelRequest::factory()->create([
+            'user_id' => $this->usuario->id,
+            'travelers_name' => 'John Doe',
+        ]);
+
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.show', $pedido->uuid));
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJson([
+                'uuid' => $pedido->uuid,
+                'travelers_name' => 'John Doe',
+            ])
+            ->assertJsonStructure([
+                'uuid',
+                'travelers_name',
+                'destination',
+                'status',
+            ]);
+    });
+
+    test('deve retornar 404 se o pedido pertencer a outro usuário', function () {
+        $outroUsuario = User::factory()->create();
+        $pedidoDeOutro = TravelRequest::factory()->create([
+            'user_id' => $outroUsuario->id,
+        ]);
+
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.show', $pedidoDeOutro->uuid));
+
+        $response->assertStatus(Response::HTTP_NOT_FOUND);
+    });
+
+    test('deve retornar 404 para um UUID que não existe na base', function () {
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.show', 'uuid-inexistente-123'));
+
+        $response->assertStatus(Response::HTTP_NOT_FOUND);
+    });
+});
+
+/**
+ * Cenários de Proteção de Rota
+ */
+describe('Show Middleware Protection', function () {
+
+    test('não deve permitir visualizar detalhes sem estar autenticado', function () {
+        $pedido = TravelRequest::factory()->create();
+
+        $this->getJson(route('api.v1.travel-requests.show', $pedido->uuid))
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
     });
 });

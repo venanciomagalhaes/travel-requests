@@ -8,4 +8,6 @@ use App\Models\TravelRequest;
 interface TravelRequestRepositoryInterface
 {
     public function create(StoreTravelRequestDTO $dto): TravelRequest;
+
+    public function findByUuid(string $uuid): TravelRequest;
 }

@@ -20,4 +20,9 @@ class TravelRequestRepository implements TravelRequestRepositoryInterface
             'user_id' => auth()->id(),
         ])->load('user');
     }
+
+    public function findByUuid(string $uuid): TravelRequest
+    {
+        return TravelRequest::query()->where('uuid', $uuid)->firstOrFail();
+    }
 }
