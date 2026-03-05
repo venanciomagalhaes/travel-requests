@@ -28,6 +28,16 @@ use OpenApi\Attributes as OA;
             type: 'string',
             example: 'customer'
         ),
+        new OA\Property(
+            property: 'permissions',
+            type: 'array',
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: 'name', type: 'string', example: 'create-travel-request'),
+                    new OA\Property(property: 'description', type: 'string', example: 'Permite criar novos pedidos de viagem'),
+                ]
+            )
+        ),
     ]
 )]
 class UserResource extends JsonResource

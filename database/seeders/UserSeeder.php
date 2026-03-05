@@ -27,5 +27,17 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('admin@onfly.com.br'),
             ]
         );
+
+        User::query()->firstOrCreate(
+            ['email' => 'customer@onfly.com.br'],
+            [
+                'uuid' => Str::uuid()->toString(),
+                'role_id' => Role::query()
+                    ->where('name', RolesNamesEnum::CUSTOMER->value)
+                    ->firstOrFail()->id,
+                'name' => 'Customer Onfly',
+                'password' => Hash::make('customer@onfly.com.br'),
+            ]
+        );
     }
 }
