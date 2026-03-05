@@ -3,6 +3,7 @@
 namespace App\Actions\V1\Auth;
 
 use App\Enums\V1\Role\RolesNamesEnum;
+use App\Exceptions\BusinessException;
 use App\Http\Dto\V1\Auth\RegisterDto;
 use App\Models\User;
 use App\Repositories\V1\Role\RoleRepositoryInterface;
@@ -49,11 +50,14 @@ readonly class RegisterAction
         });
     }
 
+    /**
+     * @throws BusinessException
+     */
     private function throwExceptionIfUserAlreadyExists(?User $user, string $email): void
     {
         if ($user) {
             $this->logger->warning("Registration failed: Email [{$email}] is already in use.");
-            abort(Response::HTTP_CONFLICT, 'This email is already registered');
+            throw new BusinessException('This email is already registered', Response::HTTP_CONFLICT);
         }
     }
 }

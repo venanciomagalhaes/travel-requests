@@ -3,6 +3,7 @@
 namespace App\Actions\V1\TravelRequest;
 
 use App\Enums\V1\TravelRequest\TravelRequestStatusEnum;
+use App\Exceptions\BusinessException;
 use App\Http\Dto\V1\TravelRequest\ChangeStatusTravelRequestDTO;
 use App\Models\TravelRequest;
 use App\Notifications\V1\ChangedStatusTravelRequestNotification;
@@ -43,19 +44,25 @@ readonly class ChangeStatusTravelRequestAction
         return $travelRequest;
     }
 
+    /**
+     * @throws BusinessException
+     */
     private function throwAndLogIfAlreadyApproved(TravelRequest $travelRequest, string $uuid): void
     {
         if ($travelRequest->status === TravelRequestStatusEnum::APPROVED->value) {
             $this->logger->warning("Change status rejected: Travel request [{$uuid}] is already approved.");
-            abort(Response::HTTP_CONFLICT, 'Travel request already approved and cannot be changed.');
+            throw new BusinessException('Travel request already approved and cannot be changed.', Response::HTTP_CONFLICT);
         }
     }
 
+    /**
+     * @throws BusinessException
+     */
     private function throwAndLogIfStatusIsSame(TravelRequest $travelRequest, string $newStatus, string $uuid): void
     {
         if ($travelRequest->status === $newStatus) {
             $this->logger->warning("Change status rejected: Request [{$uuid}] is already [{$newStatus}].");
-            abort(Response::HTTP_CONFLICT, "Travel request is already {$newStatus}.");
+            throw new BusinessException("Travel request is already {$newStatus}.", Response::HTTP_CONFLICT);
         }
     }
 }

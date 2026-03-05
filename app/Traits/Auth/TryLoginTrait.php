@@ -2,6 +2,7 @@
 
 namespace App\Traits\Auth;
 
+use App\Exceptions\BusinessException;
 use App\Services\Jwt\JwtServiceInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,10 +15,13 @@ trait TryLoginTrait
         return $jwtService->attempt($email, $password);
     }
 
+    /**
+     * @throws BusinessException
+     */
     private function throwExceptionIfUnauthorized(bool|string $token): void
     {
         if (! $token) {
-            abort(Response::HTTP_UNAUTHORIZED, 'Unauthorized');
+            throw new BusinessException('Unauthorized', Response::HTTP_UNAUTHORIZED);
         }
     }
 }
