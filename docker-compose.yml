@@ -67,6 +67,7 @@ services:
 
   redis:
     image: redis:latest
+    restart: unless-stopped
     volumes:
       - redisdata:/data
     healthcheck:
