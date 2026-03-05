@@ -16,9 +16,9 @@ readonly class RegisterDto implements DtoInterface
     public static function fromRequest(FormRequest $request): RegisterDto
     {
         return new self(
-            name: $request->input('name'),
-            email: $request->input('email'),
-            password: $request->input('password'),
+            name: $request->validated('name'),
+            email: $request->validated('email'),
+            password: $request->validated('password'),
         );
     }
 

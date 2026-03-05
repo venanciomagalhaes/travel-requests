@@ -139,3 +139,106 @@ describe('Show Middleware Protection', function () {
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
     });
 });
+
+describe('Index Travel Request', function () {
+
+    beforeEach(function () {
+        $this->usuario = User::factory()->create();
+    });
+
+    test('deve listar apenas os pedidos pertencentes ao usuário autenticado', function () {
+        TravelRequest::factory()->count(3)->create(['user_id' => $this->usuario->id]);
+
+        $outroUsuario = User::factory()->create();
+        TravelRequest::factory()->create(['user_id' => $outroUsuario->id]);
+
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.index'));
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonCount(3, 'data');
+    });
+
+    test('deve filtrar por status, destino e nome (Requisitos do Desafio)', function () {
+        TravelRequest::factory()->create([
+            'user_id' => $this->usuario->id,
+            'status' => 'approved',
+            'destination' => 'França',
+            'travelers_name' => 'John Doe',
+        ]);
+
+        $query = [
+            'status' => 'approved',
+            'destination' => 'França',
+            'travelers_name' => 'John',
+        ];
+
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.index', $query));
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.destination', 'França');
+    });
+
+    test('deve filtrar por período de tempo (Data de Ida e Volta)', function () {
+        TravelRequest::factory()->create([
+            'user_id' => $this->usuario->id,
+            'departure_date' => '2026-05-10',
+            'return_date' => '2026-05-20',
+        ]);
+
+        TravelRequest::factory()->create([
+            'user_id' => $this->usuario->id,
+            'departure_date' => '2026-06-01',
+            'return_date' => '2026-06-10',
+        ]);
+
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.index', [
+                'departure_date' => '2026-05-01',
+                'return_date' => '2026-05-25',
+            ]));
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonCount(1, 'data');
+    });
+
+    test('deve respeitar a paginação e retornar metadados', function () {
+        TravelRequest::factory()->count(10)->create(['user_id' => $this->usuario->id]);
+
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.index', ['per_page' => 5]));
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonCount(5, 'data')
+            ->assertJsonStructure([
+                'data',
+                'links',
+                'current_page', 'last_page', 'per_page', 'total',
+            ]);
+    });
+
+    test('deve retornar 204 No Content quando a busca não encontrar resultados', function () {
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.index', ['status' => 'canceled']));
+
+        $response->assertStatus(Response::HTTP_NO_CONTENT);
+    });
+
+    test('deve falhar se os formatos de data na busca forem inválidos', function () {
+        $response = $this->actingAs($this->usuario, 'api')
+            ->getJson(route('api.v1.travel-requests.index', ['departure_date' => '10/05/2026']));
+
+        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJsonValidationErrors(['departure_date']);
+    });
+});
+
+describe('Index Middleware Protection', function () {
+
+    test('não deve permitir listar pedidos sem estar autenticado', function () {
+        $this->getJson(route('api.v1.travel-requests.index'))
+            ->assertStatus(Response::HTTP_UNAUTHORIZED);
+    });
+});

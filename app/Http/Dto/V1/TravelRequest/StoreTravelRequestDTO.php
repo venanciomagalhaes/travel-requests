@@ -20,11 +20,11 @@ readonly class StoreTravelRequestDTO implements DtoInterface
     public static function fromRequest(FormRequest $request): StoreTravelRequestDTO
     {
         return new self(
-            travelersName: $request->input('travelers_name'),
-            destination: $request->input('destination'),
+            travelersName: $request->validated('travelers_name'),
+            destination: $request->validated('destination'),
             status: TravelRequestStatusEnum::REQUESTED,
-            departureDate: Carbon::createFromFormat('Y-m-d', $request->input('departure_date')),
-            returnDate: Carbon::createFromFormat('Y-m-d', $request->input('return_date')),
+            departureDate: Carbon::createFromFormat('Y-m-d', $request->validated('departure_date')),
+            returnDate: Carbon::createFromFormat('Y-m-d', $request->validated('return_date')),
         );
     }
 

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Actions\V1\TravelRequest\IndexTravelRequestAction;
 use App\Actions\V1\TravelRequest\ShowTravelRequestAction;
 use App\Actions\V1\TravelRequest\StoreTravelRequestAction;
 use App\Http\Controllers\Controller;
+use App\Http\Dto\V1\TravelRequest\IndexTravelRequestDTO;
 use App\Http\Dto\V1\TravelRequest\StoreTravelRequestDTO;
+use App\Http\Requests\V1\TravelRequest\IndexTravelRequest;
 use App\Http\Requests\V1\TravelRequest\StoreTravelRequest;
 use App\Http\Resources\V1\TravelRequestResource;
 use OpenApi\Attributes as OA;
@@ -16,6 +19,7 @@ class TravelRequestController extends Controller
     public function __construct(
         private readonly StoreTravelRequestAction $storeTravelRequestAction,
         private readonly ShowTravelRequestAction $showTravelRequestAction,
+        private readonly IndexTravelRequestAction $indexTravelRequestAction,
     ) {}
 
     #[OA\Post(
@@ -50,6 +54,7 @@ class TravelRequestController extends Controller
     #[OA\Get(
         path: '/api/v1/travel-requests/{uuid}',
         summary: 'Exibir detalhes de um pedido',
+        security: [['bearerAuth' => []]],
         tags: ['Travel Requests'],
         parameters: [
             new OA\Parameter(name: 'uuid', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
@@ -66,6 +71,49 @@ class TravelRequestController extends Controller
         return response()->json(
             TravelRequestResource::make($travelRequest),
             Response::HTTP_OK
+        );
+    }
+
+    #[OA\Get(
+        path: '/api/v1/travel-requests',
+        description: 'Returns a paginated list of travel requests belonging to the authenticated user.',
+        summary: 'List travel requests with filters',
+        security: [['bearerAuth' => []]],
+        tags: ['Travel Requests'],
+        parameters: [
+            new OA\Parameter(name: 'per_page', description: 'Amount of items per page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 15)),
+            new OA\Parameter(name: 'status', description: 'Filter by status', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['requested', 'approved', 'canceled'])),
+            new OA\Parameter(name: 'travelers_name', description: 'Filter by traveler name', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'destination', description: 'Filter by destination', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'departure_date', description: 'Filter by departure date (Y-m-d)', in: 'query', required: false, schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'return_date', description: 'Filter by return date (Y-m-d)', in: 'query', required: false, schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'created_at', description: 'Filter by creation date (Y-m-d)', in: 'query', required: false, schema: new OA\Schema(type: 'string', format: 'date')),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'A paginated list of travel requests',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/TravelRequestResource')),
+                        new OA\Property(property: 'links', type: 'object'),
+                        new OA\Property(property: 'meta', type: 'object'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(response: 204, description: 'No travel requests found'),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+        ]
+    )]
+    public function index(IndexTravelRequest $request)
+    {
+        $dto = IndexTravelRequestDTO::fromRequest($request);
+        $travelRequests = $this->indexTravelRequestAction->handle($dto);
+
+        return response()->json(
+            $travelRequests,
+            $travelRequests->count() > 0 ? Response::HTTP_OK : Response::HTTP_NO_CONTENT
         );
     }
 }

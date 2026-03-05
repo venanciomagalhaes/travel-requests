@@ -15,8 +15,8 @@ readonly class LoginDto implements DtoInterface
     public static function fromRequest(FormRequest $request): LoginDto
     {
         return new self(
-            email: $request->input('email'),
-            password: $request->input('password'),
+            email: $request->validated('email'),
+            password: $request->validated('password'),
         );
     }
 

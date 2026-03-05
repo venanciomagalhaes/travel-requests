@@ -21,6 +21,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:api')->group(function () {
         Route::prefix('travel-requests')->group(function () {
+            Route::get('/', [TravelRequestController::class, 'index'])->name('api.v1.travel-requests.index');
             Route::post('/', [TravelRequestController::class, 'store'])->name('api.v1.travel-requests.store');
             Route::get('/{uuid}', [TravelRequestController::class, 'show'])->name('api.v1.travel-requests.show');
         });
