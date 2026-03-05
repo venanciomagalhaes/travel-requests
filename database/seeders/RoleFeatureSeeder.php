@@ -24,9 +24,7 @@ class RoleFeatureSeeder extends Seeder
         $this->attach($admin, FeaturesNamesEnum::REFRESH);
         $this->attach($admin, FeaturesNamesEnum::LOGOUT);
         $this->attach($admin, FeaturesNamesEnum::INDEX_TRAVEL_REQUESTS);
-        $this->attach($admin, FeaturesNamesEnum::STORE_TRAVEL_REQUESTS);
         $this->attach($admin, FeaturesNamesEnum::SHOW_TRAVEL_REQUESTS);
-        $this->attach($admin, FeaturesNamesEnum::UPDATE_TRAVEL_REQUESTS);
         $this->attach($admin, FeaturesNamesEnum::CHANGE_STATUS_TRAVEL_REQUESTS);
 
         $this->attach($customer, FeaturesNamesEnum::ME);

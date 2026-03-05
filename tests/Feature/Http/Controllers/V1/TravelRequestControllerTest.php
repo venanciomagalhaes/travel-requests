@@ -384,3 +384,56 @@ describe('Notification Integration via API', function () {
         Notification::assertNothingSent();
     });
 });
+
+describe('Admin Permissions and Visibility', function () {
+
+    beforeEach(function () {
+        $this->adminRole = Role::query()->where('name', RolesNamesEnum::ADMINISTRATOR->value)->first();
+        $this->adminUser = User::factory()->create([
+            'role_id' => $this->adminRole->id,
+        ]);
+
+        $this->user1 = User::factory()->create();
+        $this->user2 = User::factory()->create();
+
+        TravelRequest::factory()->create(['user_id' => $this->user1->id, 'destination' => 'Paris']);
+        TravelRequest::factory()->create(['user_id' => $this->user2->id, 'destination' => 'London']);
+    });
+
+    test('um administrador deve conseguir listar todos os pedidos de todos os usuários (Global Scope ignorado)', function () {
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->getJson(route('api.v1.travel-requests.index'));
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonCount(2, 'data');
+    });
+
+    test('um administrador deve ser proibido de criar um pedido de viagem (Policy Block)', function () {
+        $dados = [
+            'travelers_name' => 'Admin trying to travel',
+            'destination' => 'Tokyo',
+            'departure_date' => now()->addDays(1)->format('Y-m-d'),
+            'return_date' => now()->addDays(7)->format('Y-m-d'),
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->postJson(route('api.v1.travel-requests.store'), $dados);
+
+        $response->assertStatus(Response::HTTP_FORBIDDEN);
+
+        $this->assertDatabaseMissing('travel_requests', [
+            'travelers_name' => 'Admin trying to travel',
+        ]);
+    });
+
+    test('um administrador deve conseguir visualizar detalhes de qualquer pedido via UUID', function () {
+        $pedidoOutroUsuario = TravelRequest::query()->first();
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->getJson(route('api.v1.travel-requests.show', $pedidoOutroUsuario->uuid));
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonPath('uuid', $pedidoOutroUsuario->uuid);
+    });
+
+});
