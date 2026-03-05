@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1;
 
+use App\Models\Feature;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use OpenApi\Attributes as OA;
@@ -42,6 +43,12 @@ class UserResource extends JsonResource
             'name' => $this->resource->name,
             'email' => $this->resource->email,
             'role' => $this->resource->role->name,
+            'permissions' => $this->resource->role->features->map(function (Feature $feature) {
+                return [
+                    'name' => $feature->name,
+                    'description' => $feature->description,
+                ];
+            }),
         ];
     }
 }

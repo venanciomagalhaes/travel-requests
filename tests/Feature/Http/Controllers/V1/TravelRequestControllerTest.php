@@ -7,6 +7,8 @@ use App\Enums\V1\TravelRequest\TravelRequestStatusEnum;
 use App\Models\Role;
 use App\Models\TravelRequest;
 use App\Models\User;
+use App\Notifications\V1\ChangedStatusTravelRequestNotification;
+use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpFoundation\Response;
 
 describe('Store Travel Request', function () {
@@ -323,5 +325,62 @@ describe('Status Protection', function () {
 
         $this->patchJson(route('api.v1.travel-requests.status', $pedido->uuid), [])
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
+    });
+});
+
+describe('Notification Integration via API', function () {
+
+    beforeEach(function () {
+        $this->adminRole = Role::query()->where('name', RolesNamesEnum::ADMINISTRATOR->value)->first();
+
+        $this->adminUser = User::factory()->create([
+            'role_id' => $this->adminRole->id,
+        ]);
+    });
+
+    test('deve disparar a notificação para o dono do pedido ao alterar o status via rota PATCH', function () {
+        Notification::fake();
+
+        $userOwner = User::factory()->create();
+
+        $travelRequest = TravelRequest::factory()->create([
+            'user_id' => $userOwner->id,
+            'status' => TravelRequestStatusEnum::REQUESTED->value,
+        ]);
+
+        $payload = [
+            'status' => TravelRequestStatusEnum::APPROVED->value,
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->patchJson(route('api.v1.travel-requests.status', $travelRequest->uuid), $payload);
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonPath('status', TravelRequestStatusEnum::APPROVED->value);
+
+        Notification::assertSentTo(
+            [$userOwner],
+            ChangedStatusTravelRequestNotification::class
+        );
+
+        Notification::assertCount(1);
+    });
+
+    test('não deve disparar notificação se a rota retornar erro de validação ou conflito', function () {
+        Notification::fake();
+
+        $travelRequest = TravelRequest::factory()->create([
+            'user_id' => $this->adminUser->id,
+            'status' => TravelRequestStatusEnum::APPROVED->value, // Já aprovado
+        ]);
+
+        $payload = ['status' => TravelRequestStatusEnum::CANCELED->value];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->patchJson(route('api.v1.travel-requests.status', $travelRequest->uuid), $payload);
+
+        $response->assertStatus(Response::HTTP_CONFLICT);
+
+        Notification::assertNothingSent();
     });
 });

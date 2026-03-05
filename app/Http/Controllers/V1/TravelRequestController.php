@@ -61,17 +61,23 @@ class TravelRequestController extends Controller
 
     #[OA\Get(
         path: '/api/v1/travel-requests/{uuid}',
-        summary: 'Exibir detalhes de um pedido',
+        summary: 'Show travel request details',
         security: [['bearerAuth' => []]],
         tags: ['Travel Requests'],
         parameters: [
-            new OA\Parameter(name: 'uuid', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(
+                name: 'uuid',
+                description: 'The unique identifier of the travel request',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Sucesso', content: new OA\JsonContent(ref: '#/components/schemas/TravelRequestResource')),
+            new OA\Response(response: 200, description: 'Success', content: new OA\JsonContent(ref: '#/components/schemas/TravelRequestResource')),
             new OA\Response(response: 401, description: 'Unauthenticated'),
             new OA\Response(response: 403, description: 'Forbidden: Missing SHOW_TRAVEL_REQUESTS feature'),
-            new OA\Response(response: 404, description: 'Pedido não encontrado ou não pertence ao usuário'),
+            new OA\Response(response: 404, description: 'Travel request not found or does not belong to the user'),
         ]
     )]
     public function show(ShowTravelRequest $request, string $uuid)
@@ -131,7 +137,7 @@ class TravelRequestController extends Controller
     #[OA\Patch(
         path: '/api/v1/travel-requests/{uuid}/status',
         description: 'Allows an administrator to change the status of a travel request.',
-        summary: 'Alterar status de um pedido',
+        summary: 'Update travel request status',
         security: [['bearerAuth' => []]],
         requestBody: new OA\RequestBody(
             required: true,
@@ -139,7 +145,13 @@ class TravelRequestController extends Controller
         ),
         tags: ['Travel Requests'],
         parameters: [
-            new OA\Parameter(name: 'uuid', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(
+                name: 'uuid',
+                description: 'The unique identifier of the travel request',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
         ],
         responses: [
             new OA\Response(
