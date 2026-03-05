@@ -1,59 +1,43 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Travel Requests Microservice ✈️
 
-## About Laravel
+Microsserviço de gerenciamento de viagens corporativas desenvolvido com o ecossistema moderno do **Laravel 11** e **PHP 8.3**. A solução utiliza **MySQL** para persistência, **Redis** para processamento de filas e **Docker** para padronização de ambiente. A segurança é garantida via **JWT** com controle de acesso baseado em funções (**RBAC**). O projeto prioriza a escalabilidade através de **processamento assíncrono** e assegura alta confiabilidade com **90% de cobertura de testes** via **Pest**, integrados a um pipeline de CI com **GitHub Actions, Husky e Laravel Pint**. A API é totalmente documentada seguindo o padrão **OpenAPI 3.0** via **Swagger**, facilitando a integração e o consumo dos endpoints.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🧠 Decisões de Arquitetura e Design
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+O projeto foi construído seguindo padrões que visam a manutenibilidade, testabilidade granular e segurança auditável:
 
-## Learning Laravel
+1. **Documentação OpenAPI 3.0 (Swagger)**: A API foi totalmente documentada utilizando o padrão **OpenAPI 3.0 via Swagger**. Isso garante uma interface interativa (DX - Developer Experience) onde é possível testar os endpoints, visualizar os contratos de dados (schemas), payloads de exemplo e os códigos de resposta HTTP semânticos diretamente pelo navegador.
+2. **Action-Domain-Responder (ADR)**: A lógica de negócio foi extraída dos Controllers para **Actions** de responsabilidade única. Essa abordagem desacopla as regras de domínio da camada de transporte, facilitando a manutenção e o reaproveitamento de código.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+3.  **Repository Pattern (Interface-Driven)**: Implementado para abstrair a camada de persistência através de contratos. Isso permite que a camada de domínio permaneça agnóstica ao ORM, facilitando mocks em testes unitários e a substituição da fonte de dados se necessário.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+4.  **Service Layer (Interface-Driven)**: Camada de serviço dedicada para **JWT, Notificações e Logging**, sempre orientada a interfaces (DIP). Isso permite trocar implementações externas sem afetar o núcleo da aplicação.
 
-## Laravel Sponsors
+5.  **Data Transfer Objects (DTOs)**: Utilizados para tipar e validar a entrada de dados entre a API e a camada de domínio, garantindo que as Actions operem apenas com dados estruturados e validados.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+6.  **Form Requests & API Resources**: O **Form Requests** centraliza as regras de validação e autorização da requisição, enquanto o **API Resources** garante respostas consistentes e desacopladas da estrutura física do banco.
 
-### Premium Partners
+7.  **Migrations & Database Design (Dual-ID Strategy)**: Uso de chaves primárias e estrangeiras indexadas com **BigInt Autoincrement** para máxima performance interna no MySQL. Para o tráfego externo (API), utilizamos **UUIDs**, impedindo a exposição de IDs sequenciais e mitigando ataques de enumeração.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+8.  **Segregação de Funções**: Aplicação rigorosa de segregação de permissões e funções, para integridade de acessos:
 
-## Contributing
+    -   **Customers**: Restritos a gerenciar exclusivamente seus próprios pedidos via escopo global de usuário.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    -   **Administrators**: Atuam como auditores e aprovadores com visibilidade total, porém proibidos de criar ou editar pedidos para si mesmos, garantindo conformidade com regras de auditoria.
 
-## Code of Conduct
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+9. **Observabilidade**: Implementação de um `LoggerService` centralizado para rastrear fluxos críticos e tentativas de acesso negado.
+10. **Processamento Assíncrono**: As notificações de status utilizam **Redis** e **Laravel Queues** para garantir que o tempo de resposta da API não seja afetado pelo envio de e-mails/notificações, realizando novas tentativas em casos de falhas.
 
-## Security Vulnerabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 🛡️ Qualidade de Código e CI/CD
 
-## License
+Para garantir a confiabilidade exigida, o repositório conta com:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+* **Husky & Git Hooks**: Impedem commits que quebrem o padrão de código ou que quebrem testes.
+* **Laravel Pint**: Garantia de estilo de código (PSR-12).
+* **GitHub Workflows**: Cada Push ou Pull Request executa automaticamente a análise de Lint e toda a suíte de testes em um ambiente isolado.  
+  
+
