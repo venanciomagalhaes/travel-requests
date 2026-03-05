@@ -11,7 +11,7 @@ use OpenApi\Attributes as OA;
     contact: new OA\Contact(email: 'suporte@exemplo.com')
 )]
 #[OA\Server(
-    url: '/api/v1',
+    url: 'http://localhost:3101',
     description: 'Servidor de Desenvolvimento'
 )]
 #[OA\SecurityScheme(

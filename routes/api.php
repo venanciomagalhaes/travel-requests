@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\V1\AuthController;
+use App\Http\Controllers\V1\TravelRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -18,4 +19,9 @@ Route::prefix('v1')->group(function () {
 
     });
 
+    Route::middleware('auth:api')->group(function () {
+        Route::prefix('travel-requests')->group(function () {
+            Route::post('/', [TravelRequestController::class, 'store'])->name('api.v1.travel-requests.store');
+        });
+    });
 });
