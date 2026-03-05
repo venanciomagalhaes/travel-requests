@@ -8,6 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Dto\V1\Auth\LoginDto;
 use App\Http\Dto\V1\Auth\RegisterDto;
 use App\Http\Requests\V1\Auth\LoginRequest;
+use App\Http\Requests\V1\Auth\LogoutRequest;
+use App\Http\Requests\V1\Auth\MeRequest;
+use App\Http\Requests\V1\Auth\RefreshRequest;
 use App\Http\Requests\V1\Auth\RegisterRequest;
 use App\Http\Resources\V1\UserResource;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +26,7 @@ class AuthController extends Controller
 
     #[OA\Post(
         path: '/api/v1/auth/register',
-        summary: 'Registrar um novo usuário',
+        summary: 'Register a new user',
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(ref: '#/components/schemas/RegisterRequest')
@@ -32,7 +35,7 @@ class AuthController extends Controller
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Usuário registrado com sucesso',
+                description: 'User registered successfully',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'access_token', type: 'string'),
@@ -41,8 +44,8 @@ class AuthController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 422, description: 'Erro de validação'),
-            new OA\Response(response: 409, description: 'Conflito: Usuário já existe'),
+            new OA\Response(response: 422, description: 'Validation error'),
+            new OA\Response(response: 409, description: 'Conflict: User already exists'),
         ]
     )]
     public function register(RegisterRequest $request): JsonResponse
@@ -55,7 +58,7 @@ class AuthController extends Controller
 
     #[OA\Post(
         path: '/api/v1/auth/login',
-        summary: 'Autenticação de usuário',
+        summary: 'User authentication',
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(ref: '#/components/schemas/LoginRequest')
@@ -64,7 +67,7 @@ class AuthController extends Controller
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Login realizado com sucesso',
+                description: 'Login successful',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'access_token', type: 'string'),
@@ -73,7 +76,7 @@ class AuthController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'Credenciais inválidas'),
+            new OA\Response(response: 401, description: 'Invalid credentials'),
         ]
     )]
     public function login(LoginRequest $request): JsonResponse
@@ -86,34 +89,36 @@ class AuthController extends Controller
 
     #[OA\Get(
         path: '/api/v1/auth/me',
-        summary: 'Dados do usuário logado',
+        summary: 'Get authenticated user data',
         security: [['bearerAuth' => []]],
         tags: ['Auth'],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Dados do perfil obtidos',
+                description: 'Profile data retrieved',
                 content: new OA\JsonContent(ref: '#/components/schemas/UserResource')
             ),
-            new OA\Response(response: 401, description: 'Não autorizado'),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden: Missing ME feature'),
         ]
     )]
-    public function me(): JsonResponse
+    public function me(MeRequest $request): JsonResponse
     {
         return response()->json(UserResource::make(auth()->user()));
     }
 
     #[OA\Delete(
         path: '/api/v1/auth/logout',
-        summary: 'Encerrar sessão',
+        summary: 'Log out current session',
         security: [['bearerAuth' => []]],
         tags: ['Auth'],
         responses: [
-            new OA\Response(response: 204, description: 'Logout realizado com sucesso'),
-            new OA\Response(response: 401, description: 'Não autorizado'),
+            new OA\Response(response: 204, description: 'Logout successful'),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden: Missing LOGOUT feature'),
         ]
     )]
-    public function logout(): JsonResponse
+    public function logout(LogoutRequest $request): JsonResponse
     {
         auth()->logout();
 
@@ -122,13 +127,13 @@ class AuthController extends Controller
 
     #[OA\Get(
         path: '/api/v1/auth/refresh',
-        summary: 'Renovar token JWT',
+        summary: 'Refresh JWT token',
         security: [['bearerAuth' => []]],
         tags: ['Auth'],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Token renovado com sucesso',
+                description: 'Token refreshed successfully',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'access_token', type: 'string'),
@@ -137,10 +142,11 @@ class AuthController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'Token inválido ou expirado'),
+            new OA\Response(response: 401, description: 'Invalid or expired token'),
+            new OA\Response(response: 403, description: 'Forbidden: Missing REFRESH feature'),
         ]
     )]
-    public function refresh(): JsonResponse
+    public function refresh(RefreshRequest $request): JsonResponse
     {
         return $this->respondWithToken(auth()->refresh());
     }

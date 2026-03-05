@@ -6,12 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->uuid();
@@ -21,6 +17,23 @@ return new class extends Migration
             $table->softDeletes();
         });
 
+        Schema::create('features', function (Blueprint $table) {
+            $table->id();
+            $table->uuid();
+            $table->string('name')->unique();
+            $table->string('description')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('role_feature', function (Blueprint $table) {
+            $table->id();
+            $table->uuid();
+            $table->foreignId('role_id')->constrained()->onDelete('cascade');
+            $table->foreignId('feature_id')->constrained()->onDelete('cascade');
+            $table->timestamps();
+        });
+
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->uuid();
@@ -28,7 +41,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->foreignId('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
@@ -55,8 +68,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('role_feature');
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('features');
+        Schema::dropIfExists('roles');
     }
 };

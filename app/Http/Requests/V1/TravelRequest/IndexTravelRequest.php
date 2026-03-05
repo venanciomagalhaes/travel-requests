@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1\TravelRequest;
 
+use App\Enums\V1\Feature\FeaturesNamesEnum;
 use App\Enums\V1\TravelRequest\TravelRequestStatusEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,7 +27,7 @@ class IndexTravelRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return auth()->check() && auth()->user()->hasFeature(FeaturesNamesEnum::INDEX_TRAVEL_REQUESTS);
     }
 
     public function rules(): array

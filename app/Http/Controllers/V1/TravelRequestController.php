@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Actions\V1\TravelRequest\ChangeStatusTravelRequestAction;
 use App\Actions\V1\TravelRequest\IndexTravelRequestAction;
 use App\Actions\V1\TravelRequest\ShowTravelRequestAction;
 use App\Actions\V1\TravelRequest\StoreTravelRequestAction;
 use App\Http\Controllers\Controller;
+use App\Http\Dto\V1\TravelRequest\ChangeStatusTravelRequestDTO;
 use App\Http\Dto\V1\TravelRequest\IndexTravelRequestDTO;
 use App\Http\Dto\V1\TravelRequest\StoreTravelRequestDTO;
+use App\Http\Requests\ChangeStatusTravelRequest;
+use App\Http\Requests\ShowTravelRequest;
 use App\Http\Requests\V1\TravelRequest\IndexTravelRequest;
 use App\Http\Requests\V1\TravelRequest\StoreTravelRequest;
 use App\Http\Resources\V1\TravelRequestResource;
@@ -20,6 +24,7 @@ class TravelRequestController extends Controller
         private readonly StoreTravelRequestAction $storeTravelRequestAction,
         private readonly ShowTravelRequestAction $showTravelRequestAction,
         private readonly IndexTravelRequestAction $indexTravelRequestAction,
+        private readonly ChangeStatusTravelRequestAction $changeStatusTravelRequestAction,
     ) {}
 
     #[OA\Post(
@@ -38,6 +43,9 @@ class TravelRequestController extends Controller
                 description: 'Travel request created successfully',
                 content: new OA\JsonContent(ref: '#/components/schemas/TravelRequestResource')
             ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden: Missing STORE_TRAVEL_REQUESTS feature'),
+            new OA\Response(response: 422, description: 'Validation error'),
         ]
     )]
     public function store(StoreTravelRequest $request)
@@ -61,10 +69,12 @@ class TravelRequestController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Sucesso', content: new OA\JsonContent(ref: '#/components/schemas/TravelRequestResource')),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden: Missing SHOW_TRAVEL_REQUESTS feature'),
             new OA\Response(response: 404, description: 'Pedido não encontrado ou não pertence ao usuário'),
         ]
     )]
-    public function show(string $uuid)
+    public function show(ShowTravelRequest $request, string $uuid)
     {
         $travelRequest = $this->showTravelRequestAction->handle($uuid);
 
@@ -104,6 +114,7 @@ class TravelRequestController extends Controller
             ),
             new OA\Response(response: 204, description: 'No travel requests found'),
             new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden: Missing INDEX_TRAVEL_REQUESTS feature'),
         ]
     )]
     public function index(IndexTravelRequest $request)
@@ -115,5 +126,38 @@ class TravelRequestController extends Controller
             $travelRequests,
             $travelRequests->count() > 0 ? Response::HTTP_OK : Response::HTTP_NO_CONTENT
         );
+    }
+
+    #[OA\Patch(
+        path: '/api/v1/travel-requests/{uuid}/status',
+        description: 'Allows an administrator to change the status of a travel request.',
+        summary: 'Alterar status de um pedido',
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: '#/components/schemas/ChangeStatusTravelRequest')
+        ),
+        tags: ['Travel Requests'],
+        parameters: [
+            new OA\Parameter(name: 'uuid', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Status updated successfully',
+                content: new OA\JsonContent(ref: '#/components/schemas/TravelRequestResource')
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden: Missing CHANGE_STATUS_TRAVEL_REQUESTS feature'),
+            new OA\Response(response: 409, description: 'Conflict: Request already approved'),
+            new OA\Response(response: 422, description: 'Validation error'),
+        ]
+    )]
+    public function status(ChangeStatusTravelRequest $request, string $uuid)
+    {
+        $dto = ChangeStatusTravelRequestDTO::fromRequest($request);
+        $travelRequest = $this->changeStatusTravelRequestAction->handle($dto, $uuid);
+
+        return response()->json(TravelRequestResource::make($travelRequest), Response::HTTP_OK);
     }
 }

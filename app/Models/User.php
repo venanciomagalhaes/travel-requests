@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\V1\Feature\FeaturesNamesEnum;
+use App\Enums\V1\Role\RolesNamesEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -48,6 +50,16 @@ class User extends Authenticatable implements JWTSubject
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'role_id', 'id');
+    }
+
+    public function hasFeature(FeaturesNamesEnum $featuresNamesEnum): bool
+    {
+        return $this->role->features->contains('name', $featuresNamesEnum->value);
+    }
+
+    public function hasRole(RolesNamesEnum $rolesNamesEnum): bool
+    {
+        return $this->role->name === $rolesNamesEnum->value;
     }
 
     public function travelRequests(): HasMany

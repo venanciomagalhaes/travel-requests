@@ -2,6 +2,7 @@
 
 namespace App\Repositories\V1\TravelRequest;
 
+use App\Http\Dto\V1\TravelRequest\ChangeStatusTravelRequestDTO;
 use App\Http\Dto\V1\TravelRequest\IndexTravelRequestDTO;
 use App\Http\Dto\V1\TravelRequest\StoreTravelRequestDTO;
 use App\Models\TravelRequest;
@@ -14,4 +15,8 @@ interface TravelRequestRepositoryInterface
     public function findByUuid(string $uuid): TravelRequest;
 
     public function getAllPaginated(IndexTravelRequestDTO $dto): LengthAwarePaginator;
+
+    public function changeStatus(string $uuid, ChangeStatusTravelRequestDTO $dto): TravelRequest;
+
+    public function findByUuidWithoutUserScope(string $uuid): TravelRequest;
 }

@@ -2,6 +2,7 @@
 
 namespace App\Repositories\V1\TravelRequest;
 
+use App\Http\Dto\V1\TravelRequest\ChangeStatusTravelRequestDTO;
 use App\Http\Dto\V1\TravelRequest\IndexTravelRequestDTO;
 use App\Http\Dto\V1\TravelRequest\StoreTravelRequestDTO;
 use App\Models\TravelRequest;
@@ -39,5 +40,18 @@ class TravelRequestRepository implements TravelRequestRepositoryInterface
             ->when($dto->getCreatedAt(), fn ($q, $date) => $q->whereDate('created_at', $date))
             ->orderBy('created_at', 'desc')
             ->paginate($dto->getPerPage() ?? 15);
+    }
+
+    public function changeStatus(string $uuid, ChangeStatusTravelRequestDTO $dto): TravelRequest
+    {
+        $travelRequest = TravelRequest::query()->withoutGlobalScope('user_scope')->where('uuid', $uuid)->firstOrFail();
+        $travelRequest->update(['status' => $dto->getStatus()->value]);
+
+        return $travelRequest->load('user');
+    }
+
+    public function findByUuidWithoutUserScope(string $uuid): TravelRequest
+    {
+        return TravelRequest::query()->withoutGlobalScope('user_scope')->where('uuid', $uuid)->firstOrFail();
     }
 }

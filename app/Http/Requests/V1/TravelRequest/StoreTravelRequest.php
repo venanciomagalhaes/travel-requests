@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1\TravelRequest;
 
+use App\Enums\V1\Feature\FeaturesNamesEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use OpenApi\Attributes as OA;
 
@@ -21,7 +22,7 @@ class StoreTravelRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return auth()->check() && auth()->user()->hasFeature(FeaturesNamesEnum::STORE_TRAVEL_REQUESTS);
     }
 
     public function rules(): array

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Http\Controllers\V1;
 
+use App\Enums\V1\Role\RolesNamesEnum;
+use App\Enums\V1\TravelRequest\TravelRequestStatusEnum;
+use App\Models\Role;
 use App\Models\TravelRequest;
 use App\Models\User;
 use Symfony\Component\HttpFoundation\Response;
@@ -239,6 +242,86 @@ describe('Index Middleware Protection', function () {
 
     test('não deve permitir listar pedidos sem estar autenticado', function () {
         $this->getJson(route('api.v1.travel-requests.index'))
+            ->assertStatus(Response::HTTP_UNAUTHORIZED);
+    });
+});
+
+describe('Change Status Travel Request', function () {
+
+    beforeEach(function () {
+        $this->adminRole = Role::query()->where('name', RolesNamesEnum::ADMINISTRATOR->value)->first();
+
+        $this->adminUser = User::factory()->create([
+            'role_id' => $this->adminRole->id,
+        ]);
+    });
+
+    test('deve permitir que um administrador aprove um pedido de viagem', function () {
+        $pedido = TravelRequest::factory()->create([
+            'status' => TravelRequestStatusEnum::REQUESTED->value,
+        ]);
+
+        $dados = ['status' => TravelRequestStatusEnum::APPROVED->value];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->patchJson(route('api.v1.travel-requests.status', $pedido->uuid), $dados);
+
+        $response->assertStatus(Response::HTTP_OK)
+            ->assertJsonPath('status', TravelRequestStatusEnum::APPROVED->value);
+
+        $this->assertDatabaseHas('travel_requests', [
+            'uuid' => $pedido->uuid,
+            'status' => TravelRequestStatusEnum::APPROVED->value,
+        ]);
+    });
+
+    test('deve retornar conflito se tentar alterar um pedido que já está aprovado', function () {
+        $pedido = TravelRequest::factory()->create([
+            'status' => TravelRequestStatusEnum::APPROVED->value,
+        ]);
+
+        $dados = ['status' => TravelRequestStatusEnum::CANCELED->value];
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->patchJson(route('api.v1.travel-requests.status', $pedido->uuid), $dados);
+
+        $response->assertStatus(Response::HTTP_CONFLICT)
+            ->assertJsonFragment(['message' => 'Travel request already approved and cannot be changed.']);
+    });
+
+    test('deve falhar a validação se o status enviado for inválido', function () {
+        $pedido = TravelRequest::factory()->create();
+
+        $response = $this->actingAs($this->adminUser, 'api')
+            ->patchJson(route('api.v1.travel-requests.status', $pedido->uuid), [
+                'status' => 'invalid-status',
+            ]);
+
+        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJsonValidationErrors(['status']);
+    });
+});
+
+describe('Status Protection', function () {
+
+    test('não deve permitir que um usuário comum altere o status de um pedido', function () {
+        $customerRole = Role::query()->where('name', RolesNamesEnum::CUSTOMER->value)->first();
+        $usuarioComum = User::factory()->create(['role_id' => $customerRole->id]);
+
+        $pedido = TravelRequest::factory()->create();
+
+        $response = $this->actingAs($usuarioComum, 'api')
+            ->patchJson(route('api.v1.travel-requests.status', $pedido->uuid), [
+                'status' => TravelRequestStatusEnum::APPROVED->value,
+            ]);
+
+        $response->assertStatus(Response::HTTP_FORBIDDEN);
+    });
+
+    test('não deve permitir alterar status sem estar autenticado', function () {
+        $pedido = TravelRequest::factory()->create();
+
+        $this->patchJson(route('api.v1.travel-requests.status', $pedido->uuid), [])
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
     });
 });
